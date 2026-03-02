@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeliTrack — Gérez vos livraisons. Simplement.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Chivo:ital,wght@0,300;0,400;0,700;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ink: #0A0A0A;
+  --paper: #F5F0E8;
+  --orange: #F4621F;
+  --orange-dark: #C44A0D;
+  --cream: #EDE8DC;
+  --muted: #8A8070;
+  --white: #FAFAF8;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Chivo', sans-serif;
+  background: var(--ink);
+  color: var(--paper);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* CUSTOM CURSOR */
+.cursor {
+  width: 12px; height: 12px;
+  background: var(--orange);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition: transform 0.15s ease;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  width: 36px; height: 36px;
+  border: 1.5px solid var(--orange);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  transition: all 0.25s ease;
+  opacity: 0.5;
+}
+body:has(a:hover) .cursor, body:has(button:hover) .cursor { transform: scale(2.5); }
+body:has(a:hover) .cursor-ring, body:has(button:hover) .cursor-ring { transform: scale(1.5); opacity: 0.2; }
+
+/* NOISE TEXTURE OVERLAY */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  padding: 20px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px);
+  background: rgba(10,10,10,0.8);
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 3px;
+  color: var(--paper);
+}
+.logo span { color: var(--orange); }
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  list-style: none;
+}
+.nav-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--paper); }
+.btn-nav {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--orange);
+  color: var(--ink);
+  border: none;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-nav:hover { background: var(--paper); transform: translateY(-1px); }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding: 120px 48px 80px;
+  position: relative;
+  overflow: hidden;
+  gap: 60px;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(244,98,31,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--orange);
+}
+
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(72px, 8vw, 120px);
+  line-height: 0.9;
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+  color: var(--paper);
+}
+h1 em {
+  font-style: normal;
+  color: var(--orange);
+  -webkit-text-stroke: 0px;
+}
+h1 .outline {
+  -webkit-text-stroke: 1.5px var(--paper);
+  color: transparent;
+}
+
+.hero-sub {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 420px;
+  margin-bottom: 44px;
+  font-weight: 300;
+}
+.hero-sub strong { color: var(--paper); font-weight: 700; }
+
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.btn-primary {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  background: var(--orange);
+  color: var(--ink);
+  border: none;
+  padding: 16px 36px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '→';
+  margin-left: 10px;
+}
+.btn-primary:hover {
+  background: var(--paper);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(244,98,31,0.3);
+}
+.btn-secondary {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 16px 28px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--paper); }
+
+/* HERO VISUAL */
+.hero-visual {
+  position: relative;
+  height: 520px;
+  animation: fadeInRight 1s ease both;
+  animation-delay: 0.4s;
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Dashboard mockup */
+.mockup {
+  position: absolute;
+  inset: 0;
+  background: #111318;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.mockup-bar {
+  height: 40px;
+  background: #0D0F14;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.mockup-content { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.mock-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.mock-stat {
+  background: #1A1E2A;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px;
+  border-radius: 6px;
+}
+.mock-stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--paper);
+  line-height: 1;
+}
+.mock-stat-val.orange { color: var(--orange); }
+.mock-stat-val.green  { color: #10B981; }
+.mock-stat-lbl { font-size: 9px; color: #5A6070; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+.mock-map {
+  height: 200px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.mock-map-sat {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: brightness(0.88) saturate(1.1);
+}
+.mock-map-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.28) 100%);
+}
+.mock-map-grid { display: none; }
+.mock-dot {
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+.mock-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  animation: mapPulse 2s infinite;
+}
+.mock-dot.d1 { background: var(--orange); top: 35%; left: 25%; animation-delay: 0s; }
+.mock-dot.d2 { background: #10B981;      top: 55%; left: 60%; animation-delay: 0.7s; }
+.mock-dot.d3 { background: #3B82F6;      top: 25%; left: 70%; animation-delay: 1.4s; }
+.mock-dot.d1::after { background: rgba(244,98,31,0.2); animation-delay: 0s; }
+.mock-dot.d2::after { background: rgba(16,185,129,0.2); animation-delay: 0.7s; }
+.mock-dot.d3::after { background: rgba(59,130,246,0.2); animation-delay: 1.4s; }
+@keyframes mapPulse {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.mock-list { display: flex; flex-direction: column; gap: 6px; }
+.mock-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1A1E2A;
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.mock-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; font-family: 'Space Mono', monospace;
+  flex-shrink: 0;
+}
+.mock-name { font-size: 11px; color: var(--paper); font-weight: 600; flex: 1; }
+.mock-badge {
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+.badge-green  { background: rgba(16,185,129,0.15); color: #10B981; }
+.badge-orange { background: rgba(244,98,31,0.15);  color: var(--orange); }
+.badge-blue   { background: rgba(59,130,246,0.15); color: #3B82F6; }
+
+/* ── TRAJET JOURNALIER ───────────────────────────────────── */
+.trajet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.trajet-livreur {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trajet-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(244,98,31,0.18);
+  color: var(--orange);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800;
+  font-family: 'Space Mono', monospace;
+  border: 1.5px solid rgba(244,98,31,0.4);
+  flex-shrink: 0;
+}
+.trajet-nom {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--paper);
+}
+.trajet-zone {
+  font-size: 9px;
+  color: #5A6070;
+  font-family: 'Space Mono', monospace;
+  margin-top: 1px;
+}
+.trajet-progress-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.trajet-progress-fill {
+  height: 100%;
+  width: 72%;
+  background: linear-gradient(90deg, var(--orange), #F59E0B);
+  border-radius: 2px;
+  position: relative;
+}
+.trajet-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translate(50%, -50%);
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #F59E0B;
+  box-shadow: 0 0 6px #F59E0B;
+}
+.trajet-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.trajet-stop {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  position: relative;
+}
+.trajet-stop:not(:last-child) .stop-line {
+  position: absolute;
+  left: 11px;
+  top: 22px;
+  bottom: -6px;
+  width: 1px;
+}
+.stop-dot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+.stop-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.stop-connector {
+  width: 1px;
+  flex: 1;
+  min-height: 14px;
+}
+.stop-body {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 10px;
+}
+.stop-client {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--paper);
+  line-height: 1.3;
+}
+.stop-detail {
+  font-size: 9px;
+  color: #5A6070;
+  font-family: 'Space Mono', monospace;
+  margin-top: 2px;
+}
+.stop-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.stop-time {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: #5A6070;
+}
+.stop-amount {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+.stop-status {
+  font-size: 8px;
+  font-family: 'Space Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.s-done   { color: #10B981; }
+.s-active { color: var(--orange); }
+.s-next   { color: #5A6070; }
+.sd-done  { background: rgba(16,185,129,0.12);  color: #10B981; }
+.sd-active{ background: rgba(244,98,31,0.15);   color: var(--orange); animation: blink-status 1.5s ease-in-out infinite; }
+.sd-next  { background: rgba(255,255,255,0.05); color: #5A6070; }
+@keyframes blink-status {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+.trajet-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.trajet-kpi {
+  text-align: center;
+}
+.trajet-kpi-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  line-height: 1;
+}
+.trajet-kpi-lbl {
+  font-size: 8px;
+  color: #5A6070;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 2px;
+}
+
+/* TICKER */
+.ticker {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(244,98,31,0.05);
+  padding: 14px 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-track {
+  display: inline-flex;
+  gap: 0;
+  animation: ticker 25s linear infinite;
+}
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ticker-item {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 40px;
+}
+.ticker-item span { color: var(--orange); }
+
+/* NUMBERS */
+.numbers {
+  padding: 100px 48px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.number-item {
+  padding: 40px 32px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease;
+}
+.number-item:last-child { border-right: none; }
+.number-item.visible { opacity: 1; transform: translateY(0); }
+.number-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 5vw, 80px);
+  color: var(--orange);
+  line-height: 1;
+  display: block;
+}
+.number-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* SECTION FOURNISSEURS */
+.section-fournisseur {
+  padding: 100px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.section-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 20px;
+}
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 5vw, 72px);
+  line-height: 0.95;
+  letter-spacing: 1px;
+  color: var(--paper);
+  margin-bottom: 24px;
+}
+h2 .accent { color: var(--orange); }
+.section-desc {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--muted);
+  font-weight: 300;
+  margin-bottom: 40px;
+}
+.section-desc strong { color: var(--paper); font-weight: 700; }
+
+/* BENEFITS LIST */
+.benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.benefit {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  transition: border-color 0.2s, background 0.2s;
+}
+.benefit:hover {
+  border-color: rgba(244,98,31,0.3);
+  background: rgba(244,98,31,0.04);
+}
+.benefit-icon {
+  width: 40px; height: 40px;
+  background: rgba(244,98,31,0.12);
+  border: 1px solid rgba(244,98,31,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.benefit-title { font-size: 14px; font-weight: 700; color: var(--paper); margin-bottom: 4px; }
+.benefit-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; font-weight: 300; }
+
+/* PRICING */
+.pricing {
+  padding: 100px 48px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.pricing-header { text-align: center; margin-bottom: 64px; }
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: rgba(255,255,255,0.05);
+  max-width: 960px;
+  margin: 0 auto;
+}
+.plan {
+  background: var(--ink);
+  padding: 40px 32px;
+  position: relative;
+  transition: background 0.2s;
+}
+.plan:hover { background: #111318; }
+.plan.featured {
+  background: var(--orange);
+  color: var(--ink);
+}
+.plan.featured .plan-price-val,
+.plan.featured .plan-name,
+.plan.featured .plan-desc { color: #0A0A0A; }
+.plan.featured .plan-feature { color: #0A0A0A; border-color: rgba(0,0,0,0.18); font-weight: 500; }
+.plan.featured .plan-feature::before { color: #0A0A0A; }
+.plan.featured .plan-period { color: #1A1A1A; }
+.plan.featured .plan-price-curr { color: #1A1A1A; }
+.plan.featured .plan-saving { color: #0A0A0A; font-weight: 700; }
+.plan.featured .plan-name { color: #0A0A0A; }
+
+.plan-badge {
+  position: absolute;
+  top: -12px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--orange);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border: 1px solid var(--orange);
+  white-space: nowrap;
+}
+.plan-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.plan-price { margin-bottom: 8px; }
+.plan-price-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 56px;
+  color: var(--paper);
+  line-height: 1;
+}
+.plan-price-curr {
+  font-size: 16px;
+  color: var(--muted);
+  vertical-align: super;
+  font-family: 'Space Mono', monospace;
+}
+.plan-period {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 28px;
+}
+.plan-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 28px;
+  font-weight: 300;
+}
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.plan-feature {
+  font-size: 13px;
+  color: var(--muted);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  gap: 10px;
+}
+.plan-feature::before { content: '—'; color: var(--orange); flex-shrink: 0; }
+.plan-cta {
+  width: 100%;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  background: rgba(255,255,255,0.08);
+  color: var(--paper);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.plan-cta:hover { background: var(--paper); color: var(--ink); }
+.plan.featured .plan-cta {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.plan.featured .plan-cta:hover { background: #1A1A1A; }
+
+/* SECTION CLIENT */
+.section-client {
+  padding: 100px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* STEPS */
+.steps { display: flex; flex-direction: column; gap: 0; }
+.step {
+  display: flex;
+  gap: 24px;
+  padding: 28px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: all 0.5s ease;
+}
+.step.visible { opacity: 1; transform: translateX(0); }
+.step:last-child { border-bottom: none; }
+.step-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  color: rgba(244,98,31,0.15);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 48px;
+  text-align: right;
+  transition: color 0.3s;
+}
+.step:hover .step-num { color: var(--orange); }
+.step-title { font-size: 15px; font-weight: 700; color: var(--paper); margin-bottom: 6px; }
+.step-desc { font-size: 13px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+
+/* TESTIMONIAL */
+.testimonials {
+  padding: 100px 48px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: #080808;
+}
+.testimonials-header { text-align: center; margin-bottom: 60px; }
+.testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; max-width: 1000px; margin: 0 auto; }
+.testimonial {
+  background: #0D0D0D;
+  padding: 36px 32px;
+  border: 1px solid rgba(255,255,255,0.04);
+  position: relative;
+}
+.testimonial::before {
+  content: '"';
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 80px;
+  color: var(--orange);
+  opacity: 0.2;
+  line-height: 0.8;
+  display: block;
+  margin-bottom: 12px;
+}
+.testimonial-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 24px;
+  font-weight: 300;
+}
+.testimonial-author { font-size: 13px; font-weight: 700; color: var(--paper); }
+.testimonial-role { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+/* FAQ */
+.faq {
+  padding: 100px 48px;
+  max-width: 760px;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.faq-header { text-align: center; margin-bottom: 56px; }
+.faq-item {
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.faq-q {
+  padding: 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--paper);
+  gap: 16px;
+  transition: color 0.2s;
+}
+.faq-q:hover { color: var(--orange); }
+.faq-arrow {
+  font-size: 20px;
+  color: var(--orange);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+.faq-item.open .faq-arrow { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
+  font-weight: 300;
+}
+.faq-item.open .faq-a { max-height: 200px; padding-bottom: 22px; }
+
+/* CTA FINAL */
+.cta-final {
+  padding: 120px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta-final::before {
+  content: 'DELITRACK';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(80px, 15vw, 220px);
+  color: rgba(244,98,31,0.03);
+  letter-spacing: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.cta-final h2 { font-size: clamp(48px, 6vw, 88px); margin-bottom: 20px; position: relative; }
+.cta-final p { font-size: 16px; color: var(--muted); max-width: 480px; margin: 0 auto 44px; line-height: 1.7; font-weight: 300; }
+.cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* FOOTER */
+footer {
+  padding: 40px 48px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+}
+.footer-logo span { color: var(--orange); }
+.footer-copy {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--paper); }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #111318;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 48px;
+  max-width: 480px;
+  width: 90%;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 20px;
+  background: none; border: none;
+  color: var(--muted); font-size: 24px; cursor: pointer;
+}
+.modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+.modal-field { margin-bottom: 16px; }
+.modal-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 8px;
+}
+.modal-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--paper);
+  padding: 12px 16px;
+  font-family: 'Chivo', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.modal-input:focus { border-color: var(--orange); }
+.modal-input::placeholder { color: rgba(255,255,255,0.2); }
+.modal-select {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--paper);
+  padding: 12px 16px;
+  font-family: 'Chivo', sans-serif;
+  font-size: 14px;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+}
+.modal-select option { background: #111318; }
+.modal-submit {
+  width: 100%;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  background: var(--orange);
+  color: var(--ink);
+  border: none;
+  padding: 16px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+.modal-submit:hover { background: var(--paper); }
+.modal-success { display: none; text-align: center; padding: 20px 0; }
+.modal-success-icon { font-size: 48px; margin-bottom: 16px; }
+.modal-success-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #10B981; letter-spacing: 2px; }
+.modal-success-text { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* ANIMATIONS */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-content > * {
+  animation: fadeInUp 0.8s ease both;
+}
+.hero-content > *:nth-child(1) { animation-delay: 0.1s; }
+.hero-content > *:nth-child(2) { animation-delay: 0.25s; }
+.hero-content > *:nth-child(3) { animation-delay: 0.4s; }
+.hero-content > *:nth-child(4) { animation-delay: 0.55s; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  nav { padding: 16px 24px; }
+  .nav-links { display: none; }
+  .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; gap: 40px; }
+  .hero-visual { height: 320px; }
+  .numbers { grid-template-columns: 1fr 1fr; padding: 60px 24px; }
+  .number-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .section-fournisseur, .section-client { grid-template-columns: 1fr; padding: 60px 24px; gap: 48px; }
+  .pricing { padding: 60px 24px; }
+  .pricing-grid { grid-template-columns: 1fr; gap: 2px; }
+  .testimonials { padding: 60px 24px; }
+  .testimonials-grid { grid-template-columns: 1fr; }
+  .faq { padding: 60px 24px; }
+  .cta-final { padding: 80px 24px; }
+  footer { flex-direction: column; gap: 20px; text-align: center; }
+  .modal-box { padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Deli<span>Track</span></div>
+  <ul class="nav-links">
+    <li><a href="#fournisseurs">Fournisseurs</a></li>
+    <li><a href="#clients">Clients</a></li>
+    <li><a href="#tarifs">Tarifs</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <button class="btn-nav" onclick="openModal()">Essai gratuit</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow">Plateforme de gestion — Algérie</div>
+    <h1>
+      Livrez<br>
+      <em>mieux.</em><br>
+      <span class="outline">Vendez plus.</span>
+    </h1>
+    <p class="hero-sub">
+      DeliTrack connecte <strong>fournisseurs, livreurs et clients</strong> en temps réel. Zéro appel manqué. Zéro livraison perdue. Zéro excel.
+    </p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="openModal()">Démarrer gratuitement</button>
+      <button class="btn-secondary" onclick="document.getElementById('fournisseurs').scrollIntoView({behavior:'smooth'})">Voir comment ça marche</button>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="mockup">
+      <div class="mockup-bar">
+        <div class="dot" style="background:#EF4444"></div>
+        <div class="dot" style="background:#F59E0B"></div>
+        <div class="dot" style="background:#10B981"></div>
+        <div style="flex:1;height:16px;background:rgba(255,255,255,0.04);border-radius:2px;margin-left:12px;max-width:160px"></div>
+      </div>
+      <div class="mockup-content">
+        <div class="mock-stats">
+          <div class="mock-stat">
+            <div class="mock-stat-val orange" id="animLiv">0</div>
+            <div class="mock-stat-lbl">Livraisons</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val green" id="animDA">0k</div>
+            <div class="mock-stat-lbl">DA encaissé</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val" id="animLivr">0</div>
+            <div class="mock-stat-lbl">Livreurs actifs</div>
+          </div>
+        </div>
+        <div class="mock-map">
+          <!-- Mosaïque satellite Esri — Alger, zoom 13 -->
+          <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:0">
+            <img class="mock-map-sat" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3229/4236" alt="" style="position:static;width:100%;height:100%;object-fit:cover;filter:brightness(0.88) saturate(1.1)">
+            <img class="mock-map-sat" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3229/4237" alt="" style="position:static;width:100%;height:100%;object-fit:cover;filter:brightness(0.88) saturate(1.1)">
+            <img class="mock-map-sat" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3230/4236" alt="" style="position:static;width:100%;height:100%;object-fit:cover;filter:brightness(0.88) saturate(1.1)">
+            <img class="mock-map-sat" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3230/4237" alt="" style="position:static;width:100%;height:100%;object-fit:cover;filter:brightness(0.88) saturate(1.1)">
+          </div>
+          <div class="mock-map-overlay"></div>
+          <!-- Trajet SVG animé — 6 arrêts Batna -->
+          <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 300 200" preserveAspectRatio="none">
+            <!-- Trajet complet — segments livrés (plein) + restants (pointillé) -->
+            <path d="M40 160 Q70 130 95 115" stroke="#F4621F" stroke-width="2" fill="none" opacity="0.9"/>
+            <path d="M95 115 Q130 95 155 88" stroke="#F4621F" stroke-width="2" fill="none" opacity="0.9"/>
+            <path d="M155 88 Q180 75 200 80" stroke="#F4621F" stroke-width="2.5" fill="none" opacity="1" stroke-dasharray="none"/>
+            <path d="M200 80 Q225 65 245 55" stroke="#F4621F" stroke-width="1.5" fill="none" opacity="0.4" stroke-dasharray="5 4"/>
+            <path d="M245 55 Q265 45 275 35" stroke="#F4621F" stroke-width="1.5" fill="none" opacity="0.4" stroke-dasharray="5 4"/>
+
+            <!-- Halo arrêt actif -->
+            <circle cx="200" cy="80" r="14" fill="rgba(244,98,31,0.15)" opacity="1">
+              <animate attributeName="r" values="10;18;10" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.2;0;0.2" dur="2s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Arrêts livrés -->
+            <circle cx="40"  cy="160" r="5" fill="#10B981" stroke="white" stroke-width="1.5"/>
+            <circle cx="95"  cy="115" r="5" fill="#10B981" stroke="white" stroke-width="1.5"/>
+            <circle cx="155" cy="88"  r="5" fill="#10B981" stroke="white" stroke-width="1.5"/>
+            <!-- Arrêt actif -->
+            <circle cx="200" cy="80"  r="6" fill="#F4621F" stroke="white" stroke-width="2"/>
+            <!-- Arrêts à venir -->
+            <circle cx="245" cy="55"  r="4" fill="#1A1E2A" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+            <circle cx="275" cy="35"  r="4" fill="#1A1E2A" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+
+            <!-- Labels numéros -->
+            <text x="40"  y="150" text-anchor="middle" font-size="7" fill="white" font-family="monospace" opacity="0.8">1</text>
+            <text x="95"  y="105" text-anchor="middle" font-size="7" fill="white" font-family="monospace" opacity="0.8">2</text>
+            <text x="155" y="78"  text-anchor="middle" font-size="7" fill="white" font-family="monospace" opacity="0.8">3</text>
+            <text x="200" y="70"  text-anchor="middle" font-size="7" fill="white" font-family="monospace" font-weight="bold">4</text>
+            <text x="245" y="45"  text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.4)" font-family="monospace">5</text>
+            <text x="275" y="25"  text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.4)" font-family="monospace">6</text>
+
+            <!-- Dépôt départ -->
+            <rect x="28" y="152" width="24" height="16" rx="2" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1"/>
+            <text x="40" y="163" text-anchor="middle" font-size="7" fill="#10B981" font-family="monospace">DEP</text>
+          </svg>
+        </div>
+        <!-- TRAJET JOURNALIER LIVREUR -->
+        <div style="background:#1A1E2A;border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:14px">
+
+          <!-- En-tête livreur -->
+          <div class="trajet-header">
+            <div class="trajet-livreur">
+              <div class="trajet-avatar">MK</div>
+              <div>
+                <div class="trajet-nom">Mourad Khaldi</div>
+                <div class="trajet-zone">📍 Batna Centre · Zone Nord</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:9px;color:#5A6070;font-family:'Space Mono',monospace">Aujourd'hui</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--orange);line-height:1.2">4 / 6</div>
+              <div style="font-size:8px;color:#5A6070;font-family:'Space Mono',monospace">ARRÊTS</div>
+            </div>
+          </div>
+
+          <!-- Barre de progression -->
+          <div class="trajet-progress-bar">
+            <div class="trajet-progress-fill"></div>
+          </div>
+
+          <!-- Timeline arrêts -->
+          <div class="trajet-stops">
+
+            <!-- ✅ Stop 1 -->
+            <div class="trajet-stop">
+              <div class="stop-dot-wrap">
+                <div class="stop-dot" style="background:#10B981;box-shadow:0 0 4px #10B981"></div>
+                <div class="stop-connector" style="background:rgba(16,185,129,0.25)"></div>
+              </div>
+              <div class="stop-body">
+                <div>
+                  <div class="stop-client">Épicerie Brahim</div>
+                  <div class="stop-detail">Rue Pasteur · 4 colis</div>
+                </div>
+                <div class="stop-right">
+                  <div class="stop-time">08:12</div>
+                  <div class="stop-amount s-done">3 200 DA</div>
+                  <div class="stop-status sd-done">✓ Livré</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ✅ Stop 2 -->
+            <div class="trajet-stop">
+              <div class="stop-dot-wrap">
+                <div class="stop-dot" style="background:#10B981;box-shadow:0 0 4px #10B981"></div>
+                <div class="stop-connector" style="background:rgba(16,185,129,0.25)"></div>
+              </div>
+              <div class="stop-body">
+                <div>
+                  <div class="stop-client">Superette Amira</div>
+                  <div class="stop-detail">Cité El Alia · 7 colis</div>
+                </div>
+                <div class="stop-right">
+                  <div class="stop-time">09:05</div>
+                  <div class="stop-amount s-done">6 800 DA</div>
+                  <div class="stop-status sd-done">✓ Livré</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ✅ Stop 3 -->
+            <div class="trajet-stop">
+              <div class="stop-dot-wrap">
+                <div class="stop-dot" style="background:#10B981;box-shadow:0 0 4px #10B981"></div>
+                <div class="stop-connector" style="background:rgba(16,185,129,0.25)"></div>
+              </div>
+              <div class="stop-body">
+                <div>
+                  <div class="stop-client">Kahwaji Salim</div>
+                  <div class="stop-detail">Blvd. de l'ALN · 2 colis</div>
+                </div>
+                <div class="stop-right">
+                  <div class="stop-time">10:33</div>
+                  <div class="stop-amount s-done">1 500 DA</div>
+                  <div class="stop-status sd-done">✓ Livré · Crédit</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 🔴 Stop 4 actif -->
+            <div class="trajet-stop">
+              <div class="stop-dot-wrap">
+                <div class="stop-dot" style="background:#F4621F;box-shadow:0 0 6px #F4621F"></div>
+                <div class="stop-connector" style="background:rgba(255,255,255,0.06)"></div>
+              </div>
+              <div class="stop-body">
+                <div>
+                  <div class="stop-client" style="color:var(--orange)">Alimentation Nadia</div>
+                  <div class="stop-detail">Quartier Parc · 5 colis</div>
+                </div>
+                <div class="stop-right">
+                  <div class="stop-time" style="color:var(--orange)">En cours</div>
+                  <div class="stop-amount s-active">4 200 DA</div>
+                  <div class="stop-status sd-active">● En livraison</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ⬜ Stop 5 à venir -->
+            <div class="trajet-stop">
+              <div class="stop-dot-wrap">
+                <div class="stop-dot" style="background:#2A2E3A;border:1.5px solid rgba(255,255,255,0.15)"></div>
+                <div class="stop-connector" style="background:rgba(255,255,255,0.04)"></div>
+              </div>
+              <div class="stop-body">
+                <div>
+                  <div class="stop-client s-next">Snack Tarek</div>
+                  <div class="stop-detail">Rue de la Paix · 3 colis</div>
+                </div>
+                <div class="stop-right">
+                  <div class="stop-time">~13:00</div>
+                  <div class="stop-amount s-next">2 700 DA</div>
+                  <div class="stop-status sd-next">Planifié</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ⬜ Stop 6 à venir -->
+            <div class="trajet-stop">
+              <div class="stop-dot-wrap">
+                <div class="stop-dot" style="background:#2A2E3A;border:1.5px solid rgba(255,255,255,0.15)"></div>
+              </div>
+              <div class="stop-body" style="padding-bottom:0">
+                <div>
+                  <div class="stop-client s-next">Épicerie El Kods</div>
+                  <div class="stop-detail">Cité 1000 lgts · 6 colis</div>
+                </div>
+                <div class="stop-right">
+                  <div class="stop-time">~14:30</div>
+                  <div class="stop-amount s-next">5 100 DA</div>
+                  <div class="stop-status sd-next">Planifié</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Footer KPIs -->
+          <div class="trajet-footer">
+            <div class="trajet-kpi">
+              <div class="trajet-kpi-val" style="color:#10B981">11 500</div>
+              <div class="trajet-kpi-lbl">DA encaissé</div>
+            </div>
+            <div class="trajet-kpi">
+              <div class="trajet-kpi-val" style="color:#5A6070">1 500</div>
+              <div class="trajet-kpi-lbl">DA crédit</div>
+            </div>
+            <div class="trajet-kpi">
+              <div class="trajet-kpi-val" style="color:var(--orange)">23 500</div>
+              <div class="trajet-kpi-lbl">DA total jour</div>
+            </div>
+            <div class="trajet-kpi">
+              <div class="trajet-kpi-val" style="color:var(--paper)">27 km</div>
+              <div class="trajet-kpi-lbl">Parcourus</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="ticker-item">Suivi GPS temps réel <span>✦</span></span>
+    <span class="ticker-item">Gestion des crédits <span>✦</span></span>
+    <span class="ticker-item">Commandes en ligne <span>✦</span></span>
+    <span class="ticker-item">Factures automatiques <span>✦</span></span>
+    <span class="ticker-item">Annonces clients <span>✦</span></span>
+    <span class="ticker-item">Export Excel <span>✦</span></span>
+    <span class="ticker-item">Multi-livreurs <span>✦</span></span>
+    <span class="ticker-item">Catalogue produits <span>✦</span></span>
+    <span class="ticker-item">Suivi GPS temps réel <span>✦</span></span>
+    <span class="ticker-item">Gestion des crédits <span>✦</span></span>
+    <span class="ticker-item">Commandes en ligne <span>✦</span></span>
+    <span class="ticker-item">Factures automatiques <span>✦</span></span>
+    <span class="ticker-item">Annonces clients <span>✦</span></span>
+    <span class="ticker-item">Export Excel <span>✦</span></span>
+    <span class="ticker-item">Multi-livreurs <span>✦</span></span>
+    <span class="ticker-item">Catalogue produits <span>✦</span></span>
+  </div>
+</div>
+
+<!-- NUMBERS -->
+<div class="numbers" id="numbers">
+  <div class="number-item">
+    <span class="number-val">0%</span>
+    <div class="number-label">d'erreurs de livraison avec un suivi en temps réel</div>
+  </div>
+  <div class="number-item">
+    <span class="number-val">3 min</span>
+    <div class="number-label">pour onboarder un livreur, sans formation</div>
+  </div>
+  <div class="number-item">
+    <span class="number-val">100%</span>
+    <div class="number-label">des paiements tracés — espèces, chèque ou crédit</div>
+  </div>
+  <div class="number-item">
+    <span class="number-val">1 app</span>
+    <div class="number-label">pour fournisseur, livreur et client — rien à installer</div>
+  </div>
+</div>
+
+<!-- SECTION FOURNISSEURS -->
+<section class="section-fournisseur" id="fournisseurs">
+  <div>
+    <div class="section-eyebrow">Pour les fournisseurs</div>
+    <h2>Arrêtez de<br>gérer au <span class="accent">téléphone.</span></h2>
+    <p class="section-desc">
+      Chaque jour vous perdez du temps à appeler vos livreurs, récupérer les reçus papier, calculer les crédits. DeliTrack automatise tout ça — vous <strong>voyez tout, en temps réel</strong>, depuis votre téléphone.
+    </p>
+    <button class="btn-primary" onclick="openModal()">Je veux essayer gratuitement</button>
+  </div>
+  <div class="benefits">
+    <div class="benefit">
+      <div class="benefit-icon">🗺️</div>
+      <div>
+        <div class="benefit-title">Suivi GPS de vos livreurs en direct</div>
+        <div class="benefit-desc">Voyez exactement où est chaque livreur sur la carte. Plus d'appels pour "t'es où ?".</div>
+      </div>
+    </div>
+    <div class="benefit">
+      <div class="benefit-icon">💰</div>
+      <div>
+        <div class="benefit-title">Gestion des crédits et paiements partiels</div>
+        <div class="benefit-desc">Un client paye la moitié ? Le système note le reste automatiquement. Encaissez lors de la prochaine livraison.</div>
+      </div>
+    </div>
+    <div class="benefit">
+      <div class="benefit-icon">📢</div>
+      <div>
+        <div class="benefit-title">Annoncez promos et nouveaux produits</div>
+        <div class="benefit-desc">Envoyez une annonce à tous vos clients en 30 secondes. Promotion, nouveau produit, fermeture exceptionnelle.</div>
+      </div>
+    </div>
+    <div class="benefit">
+      <div class="benefit-icon">📊</div>
+      <div>
+        <div class="benefit-title">Rapports et exports automatiques</div>
+        <div class="benefit-desc">Téléchargez vos données en Excel. Partagez avec votre comptable sans rien réécrire à la main.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="tarifs">
+  <div class="pricing-header">
+    <div class="section-eyebrow" style="justify-content:center;display:flex">Tarifs</div>
+    <h2 style="margin-bottom:12px">Simple. <span class="accent">Transparent.</span></h2>
+    <p style="font-size:15px;color:var(--muted);max-width:440px;margin:0 auto;font-weight:300">Vos livreurs et clients utilisent l'app gratuitement. Vous ne payez que pour votre compte fournisseur.</p>
+    <!-- Toggle Mensuel / Annuel -->
+    <div class="billing-toggle">
+      <div class="billing-opts">
+        <button class="billing-opt active" id="optMensuel" onclick="setBilling('mensuel')">Mensuel</button>
+        <button class="billing-opt" id="optAnnuel" onclick="setBilling('annuel')">Annuel</button>
+      </div>
+      <span class="billing-badge">2 mois offerts</span>
+    </div>
+  </div>
+
+  <div class="pricing-grid">
+
+    <!-- STARTER -->
+    <div class="plan">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price price-monthly">
+        <span class="plan-price-curr">DA </span><span class="plan-price-val">2 900</span>
+      </div>
+      <div class="plan-price price-annual">
+        <span class="plan-price-curr">DA </span><span class="plan-price-val">29 000</span>
+      </div>
+      <div class="plan-period period-monthly">/ mois · 1 mois gratuit à l'inscription</div>
+      <div class="plan-period period-annual">/ an · soit 2 417 DA/mois</div>
+      <div class="plan-saving" id="sav-starter"></div>
+      <div class="plan-desc">Pour démarrer et tester sans risque.</div>
+      <ul class="plan-features">
+        <li class="plan-feature">Jusqu'à 2 livreurs</li>
+        <li class="plan-feature">100 livraisons / mois</li>
+        <li class="plan-feature">Suivi GPS basique</li>
+        <li class="plan-feature">Factures automatiques</li>
+        <li class="plan-feature">Support WhatsApp</li>
+      </ul>
+      <button class="plan-cta" onclick="openModal('Starter')">Commencer</button>
+    </div>
+
+    <!-- PRO -->
+    <div class="plan featured">
+      <div class="plan-badge">Le plus populaire</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price price-monthly">
+        <span class="plan-price-curr">DA </span><span class="plan-price-val">6 900</span>
+      </div>
+      <div class="plan-price price-annual">
+        <span class="plan-price-curr">DA </span><span class="plan-price-val">69 000</span>
+      </div>
+      <div class="plan-period period-monthly">/ mois · 1 mois gratuit à l'inscription</div>
+      <div class="plan-period period-annual">/ an · soit 5 750 DA/mois</div>
+      <div class="plan-saving" id="sav-pro"></div>
+      <div class="plan-desc">Pour les fournisseurs actifs qui veulent tout contrôler.</div>
+      <ul class="plan-features">
+        <li class="plan-feature">Jusqu'à 5 livreurs</li>
+        <li class="plan-feature">Livraisons illimitées</li>
+        <li class="plan-feature">GPS + trajet complet</li>
+        <li class="plan-feature">Annonces clients</li>
+        <li class="plan-feature">Gestion des crédits</li>
+        <li class="plan-feature">Export Excel / CSV</li>
+      </ul>
+      <button class="plan-cta" onclick="openModal('Pro')">Commencer</button>
+    </div>
+
+    <!-- BUSINESS -->
+    <div class="plan">
+      <div class="plan-name">Business</div>
+      <div class="plan-price price-monthly">
+        <span class="plan-price-curr">DA </span><span class="plan-price-val">11 900</span>
+      </div>
+      <div class="plan-price price-annual">
+        <span class="plan-price-curr">DA </span><span class="plan-price-val">119 000</span>
+      </div>
+      <div class="plan-period period-monthly">/ mois · 1 mois gratuit à l'inscription</div>
+      <div class="plan-period period-annual">/ an · soit 9 917 DA/mois</div>
+      <div class="plan-saving" id="sav-business"></div>
+      <div class="plan-desc">Pour les grossistes et distributeurs à grande échelle.</div>
+      <ul class="plan-features">
+        <li class="plan-feature">Jusqu'à 15 livreurs</li>
+        <li class="plan-feature">Multi-dépôts</li>
+        <li class="plan-feature">Tableau de bord avancé</li>
+        <li class="plan-feature">Rapports par période</li>
+        <li class="plan-feature">Commandes en ligne clients</li>
+        <li class="plan-feature">Support prioritaire</li>
+      </ul>
+      <button class="plan-cta" onclick="openModal('Business')">Commencer</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- SECTION CLIENTS -->
+<section class="section-client" id="clients">
+  <div class="steps">
+    <div class="section-eyebrow">Pour les clients</div>
+    <h2 style="margin-bottom:32px">Commander.<br><span class="accent">Suivre.</span><br>Recevoir.</h2>
+    <div class="step">
+      <div class="step-num">01</div>
+      <div>
+        <div class="step-title">Trouvez votre fournisseur</div>
+        <div class="step-desc">Connectez-vous à votre fournisseur habituel en un scan. Accédez à son catalogue en temps réel.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div>
+        <div class="step-title">Commandez depuis votre téléphone</div>
+        <div class="step-desc">Parcourez le catalogue, ajoutez au panier, passez la commande. Votre livreur est notifié immédiatement.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div>
+        <div class="step-title">Payez comme vous voulez</div>
+        <div class="step-desc">Espèces, chèque ou crédit partiel. Versez ce que vous pouvez, le reste est noté pour la prochaine livraison.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div>
+        <div class="step-title">Recevez les annonces de votre fournisseur</div>
+        <div class="step-desc">Promos exclusives, nouveaux produits, changements de planning — tout dans l'app, sans WhatsApp groupes.</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div style="background:#0D0F14;border:1px solid rgba(255,255,255,0.06);padding:36px;max-width:380px">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--orange);margin-bottom:20px;text-transform:uppercase">Client · Portail</div>
+      <!-- Annonce mockup -->
+      <div style="background:rgba(244,98,31,0.08);border:1px solid rgba(244,98,31,0.2);border-radius:4px;padding:16px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--orange);font-family:'Space Mono',monospace;margin-bottom:6px">🏷️ PROMOTION</div>
+        <div style="font-size:14px;font-weight:700;color:var(--paper);margin-bottom:4px">Huile Afia 5L — -15% ce mois</div>
+        <div style="font-size:12px;color:var(--muted)">Expire dans 8 jours</div>
+      </div>
+      <!-- Commande mockup -->
+      <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:4px;padding:16px;margin-bottom:12px">
+        <div style="font-size:10px;color:#10B981;font-family:'Space Mono',monospace;margin-bottom:6px">📋 COMMANDE #2847</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">3 × Huile · 2 × Sucre · 1 × Café</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#10B981">4 800 DA</span>
+          <span style="font-size:10px;background:rgba(16,185,129,0.1);color:#10B981;padding:3px 10px;border-radius:2px;font-family:'Space Mono',monospace">En route</span>
+        </div>
+      </div>
+      <!-- Crédit mockup -->
+      <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:4px;padding:16px">
+        <div style="font-size:10px;color:#3B82F6;font-family:'Space Mono',monospace;margin-bottom:6px">💳 SOLDE CRÉDIT</div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:13px;color:var(--muted)">Versé ce mois</span>
+          <span style="font-size:13px;font-weight:700;color:var(--paper)">12 400 DA</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <span style="font-size:13px;color:var(--muted)">Reste dû</span>
+          <span style="font-size:13px;font-weight:700;color:#F4621F">2 300 DA</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="testimonials-header">
+    <div class="section-eyebrow" style="justify-content:center;display:flex;margin-bottom:16px">Ce qu'ils disent</div>
+    <h2>Ils ont <span class="accent">adopté</span><br>DeliTrack.</h2>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial">
+      <div class="testimonial-text">Avant je passais 2 heures par jour à appeler mes livreurs. Maintenant je vois tout sur mon écran. Les crédits clients sont enfin organisés.</div>
+      <div class="testimonial-author">Salim B.</div>
+      <div class="testimonial-role">Grossiste alimentaire · Alger</div>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-text">Mes clients commandent directement dans l'app. J'ai augmenté mes commandes de 30% sans recruter un seul commercial.</div>
+      <div class="testimonial-author">Nassim K.</div>
+      <div class="testimonial-role">Distributeur eau minérale · Blida</div>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-text">Les livreurs adorent. L'application est simple, même ceux qui ne sont pas à l'aise avec les smartphones ont appris en 10 minutes.</div>
+      <div class="testimonial-author">Hamza L.</div>
+      <div class="testimonial-role">Fournisseur produits laitiers · Médéa</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="faq-header">
+    <h2>Questions <span class="accent">fréquentes.</span></h2>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Mes livreurs doivent-ils payer quelque chose ? <span class="faq-arrow">+</span></div>
+    <div class="faq-a">Non. Vos livreurs utilisent l'application gratuitement. Vous seul payez l'abonnement fournisseur. C'est vous qui contrôlez, eux qui exécutent.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Est-ce que ça marche sans internet ? <span class="faq-arrow">+</span></div>
+    <div class="faq-a">L'application fonctionne en mode démo sans connexion. Mais pour la synchronisation en temps réel entre vous, vos livreurs et vos clients, une connexion 3G minimum est nécessaire. Les livreurs peuvent saisir leurs livraisons hors ligne, elles se synchronisent à la reconnexion.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Comment mes clients passent-ils commande ? <span class="faq-arrow">+</span></div>
+    <div class="faq-a">Vous partagez un lien ou un code avec vos clients. Ils s'inscrivent en 30 secondes, voient votre catalogue et peuvent commander directement. Aucune app à télécharger — tout fonctionne dans le navigateur mobile.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Puis-je désactiver les commandes en ligne ? <span class="faq-arrow">+</span></div>
+    <div class="faq-a">Oui, à tout moment. Un simple toggle dans vos paramètres active ou désactive les commandes. Vous pouvez aussi personnaliser le message affiché à vos clients (par exemple : "Commandez par téléphone au 055...")</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Le premier mois est vraiment gratuit ? <span class="faq-arrow">+</span></div>
+    <div class="faq-a">Oui, sans condition. Pas de carte bancaire requise à l'inscription. Vous testez pendant 30 jours avec toutes les fonctionnalités de votre plan. Si vous n'êtes pas convaincu, vous ne payez rien.</div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-final">
+  <div class="section-eyebrow" style="justify-content:center;display:flex;margin-bottom:20px">Prêt à commencer ?</div>
+  <h2>Un mois gratuit.<br><span class="accent">Zéro risque.</span></h2>
+  <p>Rejoignez les fournisseurs qui ont transformé leur gestion de livraison. Onboarding en moins de 10 minutes.</p>
+  <div class="cta-group">
+    <button class="btn-primary" onclick="openModal()">Démarrer maintenant</button>
+    <button class="btn-secondary" onclick="window.open('https://wa.me/213XXXXXXXXX','_blank')">💬 Parler à un conseiller</button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Deli<span>Track</span></div>
+  <div class="footer-copy">© 2025 DeliTrack · Algérie</div>
+  <div class="footer-links">
+    <a href="#">CGU</a>
+    <a href="#">Confidentialité</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+<!-- MODAL INSCRIPTION -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modalForm">
+      <div class="modal-title">Démarrer <span style="color:var(--orange)">gratuitement</span></div>
+      <div class="modal-sub">1 mois offert · Aucune carte bancaire requise</div>
+      <div class="modal-field">
+        <label class="modal-label">Votre nom</label>
+        <input class="modal-input" id="mNom" placeholder="Ex: Salim Benali">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Téléphone (WhatsApp)</label>
+        <input class="modal-input" id="mTel" placeholder="05 XX XX XX XX" type="tel">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Ville</label>
+        <input class="modal-input" id="mVille" placeholder="Ex: Alger, Blida, Oran...">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Plan choisi</label>
+        <select class="modal-select" id="mPlan">
+          <option value="Starter Mensuel">Starter — 2 900 DA/mois</option>
+          <option value="Starter Annuel">Starter — 29 000 DA/an (2 mois offerts)</option>
+          <option value="Pro Mensuel" selected>Pro — 6 900 DA/mois ⭐</option>
+          <option value="Pro Annuel">Pro — 69 000 DA/an (2 mois offerts)</option>
+          <option value="Business Mensuel">Business — 11 900 DA/mois</option>
+          <option value="Business Annuel">Business — 119 000 DA/an (2 mois offerts)</option>
+        </select>
+      </div>
+      <button class="modal-submit" onclick="submitForm()">Commencer mon essai gratuit →</button>
+    </div>
+    <div class="modal-success" id="modalSuccess">
+      <div class="modal-success-icon">✅</div>
+      <div class="modal-success-title">Demande reçue !</div>
+      <div class="modal-success-text">Nous vous contactons sous 24h sur WhatsApp pour activer votre compte.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// CURSOR
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx - 6 + 'px';
+  cursor.style.top  = my - 6 + 'px';
+});
+function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx - 18 + 'px';
+  ring.style.top  = ry - 18 + 'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+
+// SCROLL ANIMATIONS
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.number-item, .step').forEach(el => io.observe(el));
+
+// COUNTER ANIMATION for mockup
+function animCount(el, target, suffix='', duration=1200) {
+  const start = Date.now();
+  const tick = () => {
+    const p = Math.min((Date.now()-start)/duration, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(ease * target) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  tick();
+}
+setTimeout(() => {
+  animCount(document.getElementById('animLiv'),  247);
+  animCount(document.getElementById('animDA'),    189, 'k');
+  animCount(document.getElementById('animLivr'),  5);
+}, 600);
+
+// FAQ TOGGLE
+function setBilling(mode) {
+  const annual = mode === 'annuel';
+  document.body.classList.toggle('annual', annual);
+  document.getElementById('optMensuel').classList.toggle('active', !annual);
+  document.getElementById('optAnnuel').classList.toggle('active', annual);
+  const msgs = {
+    starter:  annual ? '✓ Économisez 5 800 DA/an'  : '',
+    pro:      annual ? '✓ Économisez 13 800 DA/an' : '',
+    business: annual ? '✓ Économisez 23 800 DA/an' : '',
+  };
+  Object.entries(msgs).forEach(([k, v]) => {
+    const el = document.getElementById('sav-' + k);
+    if (el) el.textContent = v;
+  });
+}
+
+function toggleFaq(q) {
+  const item = q.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// MODAL
+function openModal(plan) {
+  if (plan) {
+    const isAnnual = document.body.classList.contains('annual');
+    document.getElementById('mPlan').value = plan + (isAnnual ? ' Annuel' : ' Mensuel');
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+function submitForm() {
+  const nom   = document.getElementById('mNom').value.trim();
+  const tel   = document.getElementById('mTel').value.trim();
+  const ville = document.getElementById('mVille').value.trim();
+  if (!nom || !tel || !ville) {
+    alert('Veuillez remplir tous les champs.');
+    return;
+  }
+  // En production : envoyer à votre backend / Google Sheet / EmailJS
+  console.log('Inscription:', {nom, tel, ville, plan: document.getElementById('mPlan').value});
+  document.getElementById('modalForm').style.display = 'none';
+  document.getElementById('modalSuccess').style.display = 'block';
+}
+
+// ACTIVE NAV LINK on scroll
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 200) current = s.id; });
+  navLinks.forEach(a => {
+    a.style.color = a.getAttribute('href') === '#'+current ? 'var(--paper)' : '';
+  });
+});
+</script>
+</body>
+</html>
